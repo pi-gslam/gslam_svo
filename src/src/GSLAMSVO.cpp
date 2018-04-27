@@ -83,9 +83,10 @@ public:
             if(_handle){
                 _handle->handle(new CurrentFrameEvent(FramePtr(new FrameSVO(vo_->lastFrame()))));
             }
-            if(vo_->map().keyframes_.size()!=lastKFSize){
+            svo::FramePtr lastKF=vo_->map().keyframes_.back();
+            if(lastKF->id_!=lastKFSize){
                 updateMap();
-                lastKFSize=vo_->map().keyframes_.size();
+                lastKFSize=lastKF->id_;
             }
         }
         return true;
