@@ -22,4 +22,4 @@ pi_add_target(gslam_svo SHARED src REQUIRED GSLAM Eigen3 OpenCV Boost DEPENDENCY
 
 pi_report_target()
 
-#pi_install(TARGETS gslam_optimizerPBA LIB_DESTINATION lib)
+pi_install(TARGETS gslam_svo LIB_DESTINATION lib)

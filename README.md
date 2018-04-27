@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This code is the [SVO](https://github.com/JakobEngel/dso) plugin implementation base on [GSLAM](https://github.com/zdzhaoyong/GSLAM).
+This code is the [SVO](https://github.com/uzh-rpg/rpg_svo) plugin implementation base on [GSLAM](https://github.com/zdzhaoyong/GSLAM).
 
 ![GSLAM-SVO](./data/images/gslam_svo.gif)
 
