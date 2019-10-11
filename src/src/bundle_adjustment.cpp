@@ -33,7 +33,7 @@
 #include <svo/config.h>
 #include <svo/map.h>
 
-#define SCHUR_TRICK 1
+#define SCHUR_TRICK 0
 
 namespace svo {
 namespace ba {
@@ -359,8 +359,8 @@ void setupG2o(g2o::SparseOptimizer * optimizer)
   g2o::BlockSolverX::LinearSolverType * linearSolver;
   linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolverX::PoseMatrixType>();
   //linearSolver = new g2o::LinearSolverCSparse<g2o::BlockSolverX::PoseMatrixType>();
-  g2o::BlockSolverX * solver_ptr = new g2o::BlockSolverX(linearSolver);
-  g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+  g2o::BlockSolverX * solver_ptr = new g2o::BlockSolverX(std::unique_ptr<g2o::BlockSolverX::LinearSolverType>(linearSolver));
+  g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(std::unique_ptr<g2o::Solver>(solver_ptr));
 #endif
 
   solver->setMaxTrialsAfterFailure(5);

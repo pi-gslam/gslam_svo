@@ -16,7 +16,6 @@
 #include <thread>
 #include <GSLAM/core/GSLAM.h>
 #include <GSLAM/core/HashMap.h>
-#include <GSLAM/core/Event.h>
 
 namespace GSLAM {
 
@@ -36,9 +35,14 @@ public:
     }
 };
 
-class SVO : public SLAM
+class SVO
 {
 public:
+    SVO(Svar config):_config(config){
+        _pubFrame=messenger.advertise<FramePtr>("svo/curframe");
+        _pubMap=messenger.advertise<MapPtr>("svo/map");
+        _subDataset=messenger.subscribe("dataset/frame",5,[this](FramePtr fr){this->track(fr);});
+    }
     virtual std::string type()const{return "SVO";}
     virtual bool valid()const{return true;}
     virtual bool isDrawable()const{return false;}
@@ -51,15 +55,15 @@ public:
             auto p=camera.getParameters();
             if(camera.CameraType()=="PinHole")
             {
-                cam_=SPtr<svo::AbstractCamera>(new svo::PinholeCamera(p[0],p[1],p[2],p[3],p[4],p[6]));
+                cam_=std::shared_ptr<svo::AbstractCamera>(new svo::PinholeCamera(p[0],p[1],p[2],p[3],p[4],p[6]));
             }
             else if(camera.CameraType()=="OpenCV"){
-                cam_=SPtr<svo::AbstractCamera>(new svo::PinholeCamera(p[0],p[1],p[2],p[3],p[4],p[6],
+                cam_=std::shared_ptr<svo::AbstractCamera>(new svo::PinholeCamera(p[0],p[1],p[2],p[3],p[4],p[6],
                         p[7],p[8],p[9],p[10],p[11]));
             }
             else return false;
 
-            vo_=SPtr<svo::FrameHandlerMono>(new svo::FrameHandlerMono(cam_.get()));
+            vo_=std::shared_ptr<svo::FrameHandlerMono>(new svo::FrameHandlerMono(cam_.get()));
             vo_->start();
         }
 
@@ -77,11 +81,13 @@ public:
         if(vo_->lastFrame() != NULL)
         {
 
-            LOG(INFO) << "Frame-Id: " << vo_->lastFrame()->id_ << " \t"
+            LOG_IF(INFO,_config.GetInt("Verbose")) << "Frame-Id: " << vo_->lastFrame()->id_ << " \t"
                       << "#Features: " << vo_->lastNumObservations() << " \n";
 
-            if(_handle){
-                _handle->handle(new CurrentFrameEvent(FramePtr(new FrameSVO(vo_->lastFrame()))));
+            if(_pubFrame.getNumSubscribers()){
+                FramePtr lastFr(new FrameSVO(vo_->lastFrame()));
+                frame->setPose(lastFr->getPose());
+                _pubFrame.publish(lastFr);
             }
             svo::FramePtr lastKF=vo_->map().keyframes_.back();
             if(lastKF->id_!=lastKFSize){
@@ -126,18 +132,35 @@ public:
             _map->insertMapPoint(PointPtr(new PointSVO((*it)->point)));
         }
 
-        setMap(_map);
-        _handle->handle(_map);
-        _handle->handle(lastKF);
+        _pubMap.publish(_map);
+        LOG(INFO)<<"Published map with "<<_map->frameNum()<<" frames.";
     }
 
-    SPtr<svo::AbstractCamera>    cam_;
-    SPtr<svo::FrameHandlerMono>  vo_;
+    std::shared_ptr<svo::AbstractCamera>    cam_;
+    std::shared_ptr<svo::FrameHandlerMono>  vo_;
     int                          lastKFSize=-1;
 
     GObjectHandle*               _handle;
+    Svar _config;
+    Subscriber _subDataset;
+    Publisher  _pubFrame,_pubMap;
 };
 
-USE_GSLAM_PLUGIN(SVO);
+int runsvo(Svar config){
+    config.arg<bool>("svo.verbose",false,"Show log of svo");
+
+    if(config.get("help",false)) {
+        auto subDataset=messenger.subscribe("dataset/frame",[](FramePtr fr){});
+        auto pubFrame  =messenger.advertise<FramePtr>("svo/curframe");
+        auto pubMap    =messenger.advertise<MapPtr>("svo/map");
+        config["__usage__"]=messenger.introduction();
+        return config.help();
+    }
+
+    SVO svo(config);
+    return Messenger::exec();
+}
+
+GSLAM_REGISTER_APPLICATION(svo,runsvo);
 
 }

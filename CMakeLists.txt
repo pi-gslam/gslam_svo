@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 include(cmake/PICMake.cmake)
-INCLUDE_DIRECTORIES(src/include)
+INCLUDE_DIRECTORIES(src/include /usr/include/suitesparse)
 
 ADD_DEFINITIONS(-DSVO_TRACE)
 SET(CMAKE_CXX_FLAGS "-Wall -D_LINUX -D_REENTRANT -march=native -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unknown-pragmas")
